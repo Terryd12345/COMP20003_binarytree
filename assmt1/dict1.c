@@ -1,46 +1,73 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "dict1.h"
+#include "tree_logic.h"
 
 
 int main(int argc, char **argv){
 
-    FILE *csv;
+    FILE *input_file;
+    FILE *output_file;
     char ch;
-    int row_index, data_index, row_number;
-    
-    csv = fopen("athlete_events_filtered.csv", "r");
-    ch = fgetc(csv);
+    int row_index;
+    int data_index;
+    int row_number;
+    int argv_index;
+
+    record *root = NULL;
+    record *current_athlete = (record*)malloc(sizeof(record));
+    char *curr = (char*)malloc(sizeof(char)*128);
+
+    // pass in argv[1] when working
+    input_file = fopen("athlete_events_filtered.csv", "r");
+    ch = fgetc(input_file);
+    output_file = fopen("output.txt", "w");
 
     row_index = 0;
     data_index = 0;
     row_number = 0;
 
-    while (row_number < 10)
-    {
-
-        if(ch == ','){    
-            row_index++;
+    while (ch != EOF){
+        if(ch == ',' || ch == '\n'){
+            /* Add string to node */
+            *(curr + data_index) = '\0';
+            current_athlete->right = NULL;
+            current_athlete->left = NULL;
+            construct_node(curr, current_athlete, row_index);
+            curr = realloc(curr, sizeof(char)*128);
             data_index = 0;
-            printf(" ");
-        } else if(ch == '\n'){
 
-            row_index = 0;
-            data_index = 0;
-            row_number++;
-            printf("\n");
-
-        } else {
+            if(ch == '\n'){
+                /* complete node and insert into tree */
+                root = insert(root, current_athlete, 0);
+                row_number++;
+                row_index = 0;
+                current_athlete = realloc(current_athlete, sizeof(record));
+            } else {
+                row_index++;
+            }
+        }
+        else {
+            /*  Build the current string */
+            *(curr + data_index) = ch;
             data_index++;
-            printf("%c", ch);
-        }   
-        
-        ch = fgetc(csv);
+        }
+        ch = fgetc(input_file);
     };
 
-    fclose(csv);
 
+    // This will be argv2 when done, as argv[1] is the input file
+    argv_index = 1;
+    int comparisons = 0;
+    int found = 0;
+    while(argv[argv_index]){
+        search_tree(root, argv[argv_index], output_file, comparisons, found);
+        comparisons = 0;
+        found  = 0;
+        argv_index++;
+    }
 
-
+    fclose(input_file);
+    free(current_athlete);
+    free(root);
 }
